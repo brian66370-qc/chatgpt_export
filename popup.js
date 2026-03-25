@@ -1,5 +1,48 @@
 const exportButton = document.getElementById("exportButton");
 const statusElement = document.getElementById("status");
+const subtitleElement = document.getElementById("subtitle");
+const languageSelect = document.getElementById("languageSelect");
+
+const messages = {
+  en: {
+    subtitle: "Export the current conversation to Markdown.",
+    button: "Export .md",
+    reading: "Reading the current conversation...",
+    exported: (filename) => `Exported ${filename}`,
+    noTab: "Cannot find the active tab.",
+    wrongPage: "Open a ChatGPT conversation tab first.",
+    noConversation: "No conversation content found on this page.",
+    extractFailed: "Could not extract the conversation from the page.",
+    exportFailed: "Export failed."
+  },
+  "zh-Hant": {
+    subtitle: "將目前開啟的對話匯出成 Markdown。",
+    button: "匯出 .md",
+    reading: "正在讀取目前對話...",
+    exported: (filename) => `已匯出 ${filename}`,
+    noTab: "找不到目前分頁。",
+    wrongPage: "請先打開 ChatGPT 對話頁面。",
+    noConversation: "這個頁面目前沒有可匯出的對話內容。",
+    extractFailed: "無法從頁面擷取對話內容。",
+    exportFailed: "匯出失敗。"
+  }
+};
+
+function getLanguage() {
+  const selected = languageSelect.value;
+  return messages[selected] ? selected : "en";
+}
+
+function t(key, ...args) {
+  const lang = getLanguage();
+  const value = messages[lang][key];
+  return typeof value === "function" ? value(...args) : value;
+}
+
+function renderLanguage() {
+  subtitleElement.textContent = t("subtitle");
+  exportButton.textContent = t("button");
+}
 
 function setStatus(message, isError = false) {
   statusElement.textContent = message;
@@ -18,10 +61,10 @@ function sanitizeFilenamePart(value) {
 async function getActiveChatTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) {
-    throw new Error("Cannot find the active tab.");
+    throw new Error(t("noTab"));
   }
   if (!/^https:\/\/(chatgpt\.com|chat\.openai\.com)\//.test(tab.url || "")) {
-    throw new Error("Open a ChatGPT conversation tab first.");
+    throw new Error(t("wrongPage"));
   }
   return tab;
 }
@@ -202,7 +245,7 @@ function extractConversationFromPage() {
 
 async function exportConversation() {
   exportButton.disabled = true;
-  setStatus("Reading the current conversation...");
+  setStatus(t("reading"));
 
   try {
     const tab = await getActiveChatTab();
@@ -212,7 +255,7 @@ async function exportConversation() {
     });
 
     if (!result?.markdown) {
-      throw new Error("Could not extract the conversation from the page.");
+      throw new Error(t("extractFailed"));
     }
 
     const markdownBlob = new Blob([result.markdown], { type: "text/markdown;charset=utf-8" });
@@ -225,13 +268,18 @@ async function exportConversation() {
       saveAs: true
     });
 
-    setStatus(`Exported ${filename}`);
+    setStatus(t("exported", filename));
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   } catch (error) {
-    setStatus(error.message || "Export failed.", true);
+    const fallback = error?.message === "No conversation content found on this page."
+      ? t("noConversation")
+      : t("exportFailed");
+    setStatus(error.message || fallback, true);
   } finally {
     exportButton.disabled = false;
   }
 }
 
 exportButton.addEventListener("click", exportConversation);
+languageSelect.addEventListener("change", renderLanguage);
+renderLanguage();

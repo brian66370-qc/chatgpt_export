@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,8 +8,17 @@
   </head>
   <body>
     <main class="panel">
-      <h1>ChatGPT Export</h1>
-      <p class="subtitle">把目前開啟的對話匯出成 Markdown。</p>
+      <div class="toolbar">
+        <h1>ChatGPT Export</h1>
+        <label class="language-picker" for="languageSelect">
+          <span>Language</span>
+          <select id="languageSelect" aria-label="Language">
+            <option value="en" selected>English</option>
+            <option value="zh-Hant">中文</option>
+          </select>
+        </label>
+      </div>
+      <p id="subtitle" class="subtitle">Export the current conversation to Markdown.</p>
       <button id="exportButton" type="button">Export .md</button>
       <p id="status" class="status" aria-live="polite"></p>
     </main>
